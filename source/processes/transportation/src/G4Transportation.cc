@@ -184,7 +184,7 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   G4double currentMinimumStep, G4double& currentSafety,
   G4GPILSelection* selection)
 {
-  G4double geometryStepLength = -1.0, newSafety = -1.0;
+  G4double geometryStepLength = -1.0;
   fParticleIsLooping = false;
 
   // Initial actions moved to  StartTrack()
@@ -282,14 +282,12 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
       //  Find whether the straight path intersects a volume
       //
       linearStepLength = fLinearNavigator->ComputeStep(
-        startPosition, startMomentumDir, currentMinimumStep, newSafety);
+        startPosition, startMomentumDir, currentMinimumStep, currentSafety);
       // Remember last safety origin & value.
       //
       fPreviousSftOrigin = startPosition;
-      fPreviousSafety    = newSafety;
-      fpSafetyHelper->SetCurrentSafety(newSafety, startPosition);
-
-      currentSafety = newSafety;
+      fPreviousSafety    = currentSafety;
+      fpSafetyHelper->SetCurrentSafety(currentSafety, startPosition);
 
       fGeometryLimitedStep = (linearStepLength <= currentMinimumStep);
       if(fGeometryLimitedStep)
