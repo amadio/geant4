@@ -253,7 +253,21 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
 
   G4double geometryStepLength = -1.0;
 
-  if(!fFieldExertedForce)
+  if(currentMinimumStep == 0.0)
+  {
+    fEndPointDistance = 0.0;
+    // flag step as geometry limited if current safety is also zero
+    fGeometryLimitedStep = (currentSafety == 0.0);
+
+    fMomentumChanged           = false;
+    fParticleIsLooping         = false;
+    fEndGlobalTimeComputed     = false;
+    fTransportEndPosition      = startPosition;
+    fTransportEndMomentumDir   = startMomentumDir;
+    fTransportEndKineticEnergy = track.GetKineticEnergy();
+    fTransportEndSpin          = track.GetPolarization();
+  }
+  else if(!fFieldExertedForce)
   {
     G4double linearStepLength;
     if(fShortStepOptimisation && (currentMinimumStep <= currentSafety))
@@ -329,33 +343,25 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
                    0.0,  // Length along track
                    pParticleDef->GetPDGSpin());
 
-    if(currentMinimumStep > 0)
-    {
-      // Do the Transport in the field (non recti-linear)
-      //
-      lengthAlongCurve = fFieldPropagator->ComputeStep(
-        aFieldTrack, currentMinimumStep, currentSafety, track.GetVolume(),
-        track.GetKineticEnergy() < fThreshold_Important_Energy);
+    // Do the Transport in the field (non recti-linear)
+    //
+    lengthAlongCurve = fFieldPropagator->ComputeStep(
+      aFieldTrack, currentMinimumStep, currentSafety, track.GetVolume(),
+      track.GetKineticEnergy() < fThreshold_Important_Energy);
 
-      fGeometryLimitedStep = fFieldPropagator->IsLastStepInVolume();
-      //
-      // It is possible that step was reduced in PropagatorInField due to
-      // previous zero steps. To cope with case that reduced step is taken
-      // in full, we must rely on PiF to obtain this value
+    fGeometryLimitedStep = fFieldPropagator->IsLastStepInVolume();
+    //
+    // It is possible that step was reduced in PropagatorInField due to
+    // previous zero steps. To cope with case that reduced step is taken
+    // in full, we must rely on PiF to obtain this value
 
-      geometryStepLength = std::min(lengthAlongCurve, currentMinimumStep);
+    geometryStepLength = std::min(lengthAlongCurve, currentMinimumStep);
 
-      // Remember last safety origin & value.
-      //
-      fPreviousSftOrigin = startPosition;
-      fPreviousSafety    = currentSafety;
-      fpSafetyHelper->SetCurrentSafety(currentSafety, startPosition);
-    }
-    else
-    {
-      geometryStepLength = lengthAlongCurve = 0.0;
-      fGeometryLimitedStep                  = false;
-    }
+    // Remember last safety origin & value.
+    //
+    fPreviousSftOrigin = startPosition;
+    fPreviousSafety    = currentSafety;
+    fpSafetyHelper->SetCurrentSafety(currentSafety, startPosition);
 
     // Get the End-Position and End-Momentum (Dir-ection)
     //
@@ -454,12 +460,6 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
       fTransportEndKineticEnergy = track.GetKineticEnergy();
     }
   }
-
-  // If we are asked to go a step length of 0, and we are on a boundary
-  // then a boundary will also limit the step -> we must flag this.
-  //
-  if(currentMinimumStep == 0.0 && currentSafety == 0.0)
-    fGeometryLimitedStep = true;
 
   // Update the safety starting from the end-point,
   // if it will become negative at the end-point.
