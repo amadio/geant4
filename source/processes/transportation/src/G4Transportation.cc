@@ -359,26 +359,30 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     fMomentumChanged         = true;
     fTransportEndMomentumDir = aFieldTrack.GetMomentumDir();
 
-    fTransportEndKineticEnergy = aFieldTrack.GetKineticEnergy();
+    fEndGlobalTimeComputed =
+      fFieldPropagator->GetCurrentFieldManager()->DoesFieldChangeEnergy();
 
-    if(fFieldPropagator->GetCurrentFieldManager()->DoesFieldChangeEnergy())
+    // Ignore change in energy for fields that conserve energy
+    // This hides the integration error, but gives a better physical answer
+    fTransportEndKineticEnergy =
+      fEndGlobalTimeComputed ? aFieldTrack.GetKineticEnergy() : particleEnergy;
+
+    if(fEndGlobalTimeComputed)
     {
       // If the field can change energy, then the time must be integrated
       //    - so this should have been updated
       //
       fCandidateEndGlobalTime = aFieldTrack.GetLabTimeOfFlight();
-      fEndGlobalTimeComputed  = true;
 
       // was ( fCandidateEndGlobalTime != track.GetGlobalTime() );
       // a cleaner way is to have FieldTrack knowing whether time is updated.
     }
+#if defined(G4VERBOSE) || defined(G4DEBUG_TRANSPORT)
     else
     {
       // The energy should be unchanged by field transport,
       //    - so the time changed will be calculated elsewhere
       //
-      fEndGlobalTimeComputed = false;
-
       // Check that the integration preserved the energy
       //     -  and if not correct this!
       G4double startEnergy = particleEnergy;
@@ -435,13 +439,8 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
           }
         }
       }  // end of if (verboseLevel)
-
-      // Correct the energy for fields that conserve it
-      //  This - hides the integration error
-      //       - but gives a better physical answer
-      //
-      fTransportEndKineticEnergy = particleEnergy;
     }
+#endif
   }
 
   // Update the safety starting from the end-point,
