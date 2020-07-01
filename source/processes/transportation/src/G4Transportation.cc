@@ -226,36 +226,34 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
 
   // Check if the particle has a force, EM or gravitational, exerted on it
   //
-  G4FieldManager* fieldMgr = 0;
-  G4bool fieldExertsForce  = false;
 
-  fieldMgr = fFieldPropagator->FindAndSetFieldManager(track.GetVolume());
   G4bool eligibleEM =
-    (particleCharge != 0.0) || (fUseMagneticMoment && (magneticMoment != 0.0));
-  G4bool eligibleGrav = fUseGravity && (restMass != 0.0);
+    (particleCharge != 0.0) || ((magneticMoment != 0.0) && fUseMagneticMoment);
+  G4bool eligibleGrav = (restMass != 0.0) && fUseGravity;
 
-  if((fieldMgr != nullptr) && (eligibleEM || eligibleGrav))
+  fFieldExertedForce = false;
+
+  if(eligibleEM || eligibleGrav)
   {
-    // User can configure the field Manager for this track
-    fieldMgr->ConfigureForTrack(&track);
-    // Called here to allow a transition from no-field pointer
-    // to finite field (non-zero pointer).
-
-    // If the field manager has no field ptr, the field is zero
-    //   by definition ( = there is no field ! )
-    const G4Field* ptrField = fieldMgr->GetDetectorField();
-    if(ptrField)
+    if(G4FieldManager* fieldMgr =
+         fFieldPropagator->FindAndSetFieldManager(track.GetVolume()))
     {
-      fieldExertsForce =
-        eligibleEM || (eligibleGrav && ptrField->IsGravityActive());
+      // User can configure the field Manager for this track
+      fieldMgr->ConfigureForTrack(&track);
+      // Called here to allow a transition from no-field pointer
+      // to finite field (non-zero pointer).
+
+      // If the field manager has no field ptr, the field is zero
+      //   by definition ( = there is no field ! )
+      if(const G4Field* ptrField = fieldMgr->GetDetectorField())
+        fFieldExertedForce =
+          eligibleEM || (eligibleGrav && ptrField->IsGravityActive());
     }
-    //  || (gravityOn && (restMass != 0.0))  )
   }
-  fFieldExertedForce = fieldExertsForce;
 
   G4double geometryStepLength = -1.0;
 
-  if(!fieldExertsForce)
+  if(!fFieldExertedForce)
   {
     G4double linearStepLength;
     if(fShortStepOptimisation && (currentMinimumStep <= currentSafety))
