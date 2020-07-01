@@ -184,7 +184,6 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   G4double currentMinimumStep, G4double& currentSafety,
   G4GPILSelection* selection)
 {
-  G4double geometryStepLength = -1.0;
   fParticleIsLooping = false;
 
   // Initial actions moved to  StartTrack()
@@ -266,6 +265,8 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     //  || (gravityOn && (restMass != 0.0))  )
   }
   fFieldExertedForce = fieldExertsForce;
+
+  G4double geometryStepLength = -1.0;
 
   if(!fieldExertsForce)
   {
