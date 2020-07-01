@@ -251,7 +251,7 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     }
   }
 
-  G4double geometryStepLength = -1.0;
+  G4double geometryStepLength = currentMinimumStep;
 
   if(currentMinimumStep == 0.0)
   {
@@ -269,39 +269,23 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   }
   else if(!fFieldExertedForce)
   {
-    G4double linearStepLength;
-    if(fShortStepOptimisation && (currentMinimumStep <= currentSafety))
+    if(geometryStepLength > currentSafety || !fShortStepOptimisation)
     {
-      // The Step is guaranteed to be taken
-      //
-      geometryStepLength   = currentMinimumStep;
-      fGeometryLimitedStep = false;
-    }
-    else
-    {
-      //  Find whether the straight path intersects a volume
-      //
-      linearStepLength = fLinearNavigator->ComputeStep(
+      const G4double linearStepLength = fLinearNavigator->ComputeStep(
         startPosition, startMomentumDir, currentMinimumStep, currentSafety);
+
+      if(linearStepLength < geometryStepLength)
+        geometryStepLength = linearStepLength;
+
       // Remember last safety origin & value.
       //
       fPreviousSftOrigin = startPosition;
       fPreviousSafety    = currentSafety;
       fpSafetyHelper->SetCurrentSafety(currentSafety, startPosition);
-
-      fGeometryLimitedStep = (linearStepLength <= currentMinimumStep);
-      if(fGeometryLimitedStep)
-      {
-        // The geometry limits the Step size (an intersection was found.)
-        geometryStepLength = linearStepLength;
-      }
-      else
-      {
-        // The full Step is taken.
-        geometryStepLength = currentMinimumStep;
-      }
     }
-    fEndPointDistance = geometryStepLength;
+
+    fEndPointDistance    = geometryStepLength;
+    fGeometryLimitedStep = geometryStepLength < currentMinimumStep;
 
     // Calculate final position
     //
