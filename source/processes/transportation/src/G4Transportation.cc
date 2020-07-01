@@ -471,13 +471,8 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   // If we are asked to go a step length of 0, and we are on a boundary
   // then a boundary will also limit the step -> we must flag this.
   //
-  if(currentMinimumStep == 0.0)
-  {
-    if(currentSafety == 0.0)
-    {
-      fGeometryLimitedStep = true;
-    }
-  }
+  if(currentMinimumStep == 0.0 && currentSafety == 0.0)
+    fGeometryLimitedStep = true;
 
   // Update the safety starting from the end-point,
   // if it will become negative at the end-point.
