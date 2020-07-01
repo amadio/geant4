@@ -216,9 +216,12 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   //
   const G4DynamicParticle* pParticle = track.GetDynamicParticle();
 
-  const G4double restMass       = pParticle->GetMass();
+  const G4double particleMass   = pParticle->GetMass();
   const G4double particleCharge = pParticle->GetCharge();
-  const G4double magneticMoment = pParticle->GetMagneticMoment();
+  const G4double particleEnergy = pParticle->GetKineticEnergy();
+
+  const G4double magneticMoment    = pParticle->GetMagneticMoment();
+  const G4ThreeVector particleSpin = pParticle->GetPolarization();
 
   // There is no need to locate the current volume. It is Done elsewhere:
   //   On track construction
@@ -229,7 +232,7 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
 
   G4bool eligibleEM =
     (particleCharge != 0.0) || ((magneticMoment != 0.0) && fUseMagneticMoment);
-  G4bool eligibleGrav = (restMass != 0.0) && fUseGravity;
+  G4bool eligibleGrav = (particleMass != 0.0) && fUseGravity;
 
   fFieldExertedForce = false;
 
@@ -264,8 +267,8 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     fEndGlobalTimeComputed     = false;
     fTransportEndPosition      = startPosition;
     fTransportEndMomentumDir   = startMomentumDir;
-    fTransportEndKineticEnergy = track.GetKineticEnergy();
-    fTransportEndSpin          = track.GetPolarization();
+    fTransportEndKineticEnergy = particleEnergy;
+    fTransportEndSpin          = particleSpin;
   }
   else if(!fFieldExertedForce)
   {
@@ -295,43 +298,38 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     // Momentum direction, energy and polarisation are unchanged by transport
     //
     fTransportEndMomentumDir   = startMomentumDir;
-    fTransportEndKineticEnergy = track.GetKineticEnergy();
-    fTransportEndSpin          = track.GetPolarization();
+    fTransportEndKineticEnergy = particleEnergy;
+    fTransportEndSpin          = particleSpin;
     fParticleIsLooping         = false;
     fMomentumChanged           = false;
     fEndGlobalTimeComputed     = false;
   }
   else  //  A field exerts force
   {
-    const G4ParticleDefinition* pParticleDef = pParticle->GetDefinition();
-    G4double momentumMagnitude = pParticle->GetTotalMomentum();
-    G4ThreeVector EndUnitMomentum;
-    G4double lengthAlongCurve;
-
-    // The charge can change (dynamic)
-    //
-    G4ChargeState chargeState(particleCharge, magneticMoment,
-                              pParticleDef->GetPDGSpin());
+    const auto pParticleDef    = pParticle->GetDefinition();
+    const auto particlePDGSpin = pParticleDef->GetPDGSpin();
+    const auto particlePDGMagM = pParticleDef->GetPDGMagneticMoment();
 
     auto equationOfMotion = fFieldPropagator->GetCurrentEquationOfMotion();
 
-    equationOfMotion->SetChargeMomentumMass(chargeState, momentumMagnitude,
-                                            restMass);
+    // The charge can change (dynamic), therefore the use of G4ChargeState
+    //
+    equationOfMotion->SetChargeMomentumMass(
+      G4ChargeState(particleCharge, magneticMoment, particlePDGSpin),
+      pParticle->GetTotalMomentum(), particleMass);
 
-    G4FieldTrack aFieldTrack =
-      G4FieldTrack(startPosition,
-                   track.GetGlobalTime(),  // Lab.
-                   track.GetMomentumDirection(), track.GetKineticEnergy(),
-                   restMass, particleCharge, track.GetPolarization(),
-                   pParticleDef->GetPDGMagneticMoment(),
-                   0.0,  // Length along track
-                   pParticleDef->GetPDGSpin());
+    G4FieldTrack aFieldTrack(startPosition,
+                             track.GetGlobalTime(),  // Lab.
+                             startMomentumDir, particleEnergy, particleMass,
+                             particleCharge, particleSpin, particlePDGMagM,
+                             0.0,  // Length along track
+                             particlePDGSpin);
 
     // Do the Transport in the field (non recti-linear)
     //
-    lengthAlongCurve = fFieldPropagator->ComputeStep(
+    const G4double lengthAlongCurve = fFieldPropagator->ComputeStep(
       aFieldTrack, currentMinimumStep, currentSafety, track.GetVolume(),
-      track.GetKineticEnergy() < fThreshold_Important_Energy);
+      particleEnergy < fThreshold_Important_Energy);
 
     fGeometryLimitedStep = fFieldPropagator->IsLastStepInVolume();
     //
@@ -382,7 +380,7 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
 
       // Check that the integration preserved the energy
       //     -  and if not correct this!
-      G4double startEnergy = track.GetKineticEnergy();
+      G4double startEnergy = particleEnergy;
       G4double endEnergy   = fTransportEndKineticEnergy;
 
       static G4ThreadLocal G4int no_inexact_steps = 0, no_large_ediff;
@@ -441,7 +439,7 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
       //  This - hides the integration error
       //       - but gives a better physical answer
       //
-      fTransportEndKineticEnergy = track.GetKineticEnergy();
+      fTransportEndKineticEnergy = particleEnergy;
     }
   }
 
