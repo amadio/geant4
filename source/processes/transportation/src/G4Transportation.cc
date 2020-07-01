@@ -184,8 +184,6 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   G4double currentMinimumStep, G4double& currentSafety,
   G4GPILSelection* selection)
 {
-  fParticleIsLooping = false;
-
   // Initial actions moved to  StartTrack()
   // --------------------------------------
   // Note: in case another process changes touchable handle
