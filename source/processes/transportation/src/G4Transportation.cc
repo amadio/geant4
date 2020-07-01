@@ -290,19 +290,14 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     fEndPointDistance    = geometryStepLength;
     fGeometryLimitedStep = geometryStepLength < currentMinimumStep;
 
-    // Calculate final position
-    //
+    fMomentumChanged       = false;
+    fParticleIsLooping     = false;
+    fEndGlobalTimeComputed = false;
     fTransportEndPosition =
       startPosition + geometryStepLength * startMomentumDir;
-
-    // Momentum direction, energy and polarisation are unchanged by transport
-    //
     fTransportEndMomentumDir   = startMomentumDir;
     fTransportEndKineticEnergy = particleEnergy;
     fTransportEndSpin          = particleSpin;
-    fParticleIsLooping         = false;
-    fMomentumChanged           = false;
-    fEndGlobalTimeComputed     = false;
   }
   else  //  A field exerts force
   {
@@ -331,12 +326,6 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
       aFieldTrack, currentMinimumStep, currentSafety, track.GetVolume(),
       particleEnergy < fThreshold_Important_Energy);
 
-    fGeometryLimitedStep = fFieldPropagator->IsLastStepInVolume();
-    //
-    // It is possible that step was reduced in PropagatorInField due to
-    // previous zero steps. To cope with case that reduced step is taken
-    // in full, we must rely on PiF to obtain this value
-
     if(lengthAlongCurve < geometryStepLength)
       geometryStepLength = lengthAlongCurve;
 
@@ -346,26 +335,26 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     fPreviousSafety    = currentSafety;
     fpSafetyHelper->SetCurrentSafety(currentSafety, startPosition);
 
-    // Get the End-Position and End-Momentum (Dir-ection)
-    //
-    fTransportEndPosition = aFieldTrack.GetPosition();
-
-    fTransportEndSpin  = aFieldTrack.GetSpin();
-    fParticleIsLooping = fFieldPropagator->IsParticleLooping();
     fEndPointDistance  = (fTransportEndPosition - startPosition).mag();
-
-    // Momentum:  Magnitude and direction can be changed too now ...
+    fGeometryLimitedStep = fFieldPropagator->IsLastStepInVolume();
     //
-    fMomentumChanged         = true;
-    fTransportEndMomentumDir = aFieldTrack.GetMomentumDir();
+    // It is possible that step was reduced in PropagatorInField due to
+    // previous zero steps. To cope with case that reduced step is taken
+    // in full, we must rely on PiF to obtain this value
 
+    fMomentumChanged   = true;
+    fParticleIsLooping = fFieldPropagator->IsParticleLooping();
     fEndGlobalTimeComputed =
       fFieldPropagator->GetCurrentFieldManager()->DoesFieldChangeEnergy();
+
+    fTransportEndPosition    = aFieldTrack.GetPosition();
+    fTransportEndMomentumDir = aFieldTrack.GetMomentumDir();
 
     // Ignore change in energy for fields that conserve energy
     // This hides the integration error, but gives a better physical answer
     fTransportEndKineticEnergy =
       fEndGlobalTimeComputed ? aFieldTrack.GetKineticEnergy() : particleEnergy;
+    fTransportEndSpin = aFieldTrack.GetSpin();
 
     if(fEndGlobalTimeComputed)
     {
