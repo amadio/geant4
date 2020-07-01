@@ -337,7 +337,8 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     // previous zero steps. To cope with case that reduced step is taken
     // in full, we must rely on PiF to obtain this value
 
-    geometryStepLength = std::min(lengthAlongCurve, currentMinimumStep);
+    if(lengthAlongCurve < geometryStepLength)
+      geometryStepLength = lengthAlongCurve;
 
     // Remember last safety origin & value.
     //
