@@ -220,8 +220,6 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   const G4double particleCharge = pParticle->GetCharge();
   const G4double magneticMoment = pParticle->GetMagneticMoment();
 
-  fGeometryLimitedStep = false;
-
   // There is no need to locate the current volume. It is Done elsewhere:
   //   On track construction
   //   By the tracking, after all AlongStepDoIts, in "Relocation"
