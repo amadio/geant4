@@ -197,10 +197,8 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
 
   // Get initial Energy/Momentum of the track
   //
-  const G4DynamicParticle* pParticle       = track.GetDynamicParticle();
-  const G4ParticleDefinition* pParticleDef = pParticle->GetDefinition();
-  G4ThreeVector startMomentumDir           = pParticle->GetMomentumDirection();
-  G4ThreeVector startPosition              = track.GetPosition();
+  const G4ThreeVector startPosition    = track.GetPosition();
+  const G4ThreeVector startMomentumDir = track.GetMomentumDirection();
 
   // The Step Point safety can be limited by other geometries and/or the
   // assumptions of any process - it's not always the geometrical safety.
@@ -216,9 +214,11 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
 
   // Is the particle charged or has it a magnetic moment?
   //
-  G4double particleCharge = pParticle->GetCharge();
-  G4double magneticMoment = pParticle->GetMagneticMoment();
-  G4double restMass       = pParticle->GetMass();
+  const G4DynamicParticle* pParticle = track.GetDynamicParticle();
+
+  const G4double restMass       = pParticle->GetMass();
+  const G4double particleCharge = pParticle->GetCharge();
+  const G4double magneticMoment = pParticle->GetMagneticMoment();
 
   fGeometryLimitedStep = false;
 
@@ -309,6 +309,7 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   }
   else  //  A field exerts force
   {
+    const G4ParticleDefinition* pParticleDef = pParticle->GetDefinition();
     G4double momentumMagnitude = pParticle->GetTotalMomentum();
     G4ThreeVector EndUnitMomentum;
     G4double lengthAlongCurve;
