@@ -195,12 +195,6 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   //
   *selection = CandidateForSelection;
 
-  fFirstStepInVolume = fNewTrack || fLastStepInVolume;
-  fLastStepInVolume  = false;
-  fNewTrack          = false;
-
-  fParticleChange.ProposeFirstStepInVolume(fFirstStepInVolume);
-
   // Get initial Energy/Momentum of the track
   //
   const G4DynamicParticle* pParticle       = track.GetDynamicParticle();
@@ -510,6 +504,11 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
     }
   }
 
+  fFirstStepInVolume = fNewTrack || fLastStepInVolume;
+  fLastStepInVolume  = false;
+  fNewTrack          = false;
+
+  fParticleChange.ProposeFirstStepInVolume(fFirstStepInVolume);
   fParticleChange.ProposeTrueStepLength(geometryStepLength);
 
   return geometryStepLength;
