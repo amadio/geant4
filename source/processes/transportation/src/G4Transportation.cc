@@ -205,16 +205,13 @@ G4double G4Transportation::AlongStepGetPhysicalInteractionLength(
   // The Step Point safety can be limited by other geometries and/or the
   // assumptions of any process - it's not always the geometrical safety.
   // We calculate the starting point's isotropic safety here.
-  //
-  G4ThreeVector OriginShift = startPosition - fPreviousSftOrigin;
-  G4double MagSqShift       = OriginShift.mag2();
-  if(MagSqShift >= sqr(fPreviousSafety))
   {
-    currentSafety = 0.0;
-  }
-  else
-  {
-    currentSafety = fPreviousSafety - std::sqrt(MagSqShift);
+    const G4double MagSqShift = (startPosition - fPreviousSftOrigin).mag2();
+
+    if(MagSqShift >= sqr(fPreviousSafety))
+      currentSafety = 0.0;
+    else
+      currentSafety = fPreviousSafety - std::sqrt(MagSqShift);
   }
 
   // Is the particle charged or has it a magnetic moment?
